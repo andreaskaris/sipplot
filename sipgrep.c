@@ -2,13 +2,16 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <curses.h>
+#include <pthread.h>
 #include "sipgraph.h"
 
 //SipGraph, share amongst everything
 struct SipGraph sg[MAX_GRAPHS];
 unsigned short num_sg;
+int fd[2];
+WINDOW * wnd;
 
-void do_graph(WINDOW * wnd, int fd) {
+void *do_graph(void *ptr) {
   pos max_x,max_y; //number of total rows and cols in window 
   int msg_offset = 0;
   int graph_offset = 0;
@@ -22,13 +25,16 @@ void do_graph(WINDOW * wnd, int fd) {
     refresh();
     
     //read integer from input pipe, block until input
-    if( read(fd, &input, sizeof(input)) == -1 ) {
+    if( read(fd[0], &input, sizeof(input)) == -1 ) {
       perror("reading from pipe");
       exit(1);
     }
     
     //scroll up or down
     switch(input) {
+    case 'r':
+      //just refresh, do nothing
+      break;
     case KEY_DOWN:
       if(msg_offset < sg[graph_offset].num_msg - 1) {
 	msg_offset++;
@@ -53,51 +59,62 @@ void do_graph(WINDOW * wnd, int fd) {
       break;
     }
   }
+
+  return 0;
 }
 
-void do_get_input(int fd) {
-  int c;
-  while( (c = getch())) {
-    write(fd, &c, sizeof(c));
+void *do_input(void *ptr) {
+  int input;
+  while( (input = getch())) { 
+    write(fd[1], &input, sizeof(input));
   }
+
+  return 0;
 }
 
-void do_capture(int fd) {
+void *do_capture(void *ptr) {
+  sleep(5);
 
+  sg[0].msg[0].desc = "HOHOHO";;
+  int input = 'r';
+  write(fd[1], &input, sizeof(input)); 
+
+  return 0;
 }
 
 int main() {
   #include "demo_data.h"
 
   //enable curses
-  WINDOW * wnd;
   wnd = initscr();
   cbreak(); //disables line buffering, making characters immediately available
   noecho(); //do not print characters on screen
   keypad(stdscr, TRUE); // enable arrow keys, F1, ...
   curs_set(0);
+
+  //create a pipe
+  if( pipe(fd) == -1 ) {
+    perror("Creating pipe\n");
+    exit(1);
+  }
   
-  //setup pipe for interprocess communication
-  int fd[2];
-  if(pipe(fd) == - 1) {
-    perror("creating pipe\n");
+  //thread input and output process
+  pthread_t graph_thread, input_thread, capture_thread;
+  if(pthread_create(&graph_thread, NULL, do_graph, NULL) != 0) {
+    perror("Creating thread for graph");
+    exit(1);
+  }
+  if(pthread_create(&input_thread, NULL, do_input, NULL) != 0) {
+    perror("Creating thread for input");
+    exit(1);
+  }
+  if(pthread_create(&capture_thread, NULL, do_capture, NULL) != 0) {
+    perror("Creating thread for capture");
     exit(1);
   }
 
-  //fork input and output process
-  int pid;
-  if( (pid = fork()) == -1 ) {
-    perror("Error forking process\n");
-    exit(1);
-  } else if(pid) { //parent
-    close(fd[1]);
-    close(0); //close 0 = stdin
-    do_graph(wnd, fd[0]);
-  } else { //child
-    close(fd[0]);
-    close(1); //close 1 = stdout
-    do_get_input(fd[1]);
-  }
+  pthread_join( graph_thread, NULL );
+  pthread_join( input_thread, NULL );
 
   endwin();
   return 0;
