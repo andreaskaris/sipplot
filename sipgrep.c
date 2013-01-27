@@ -6,6 +6,7 @@
 
 //SipGraph, share amongst everything
 struct SipGraph sg[MAX_GRAPHS];
+unsigned short num_sg;
 
 void do_graph(WINDOW * wnd, int fd) {
   pos max_x,max_y; //number of total rows and cols in window 
@@ -29,7 +30,9 @@ void do_graph(WINDOW * wnd, int fd) {
     //scroll up or down
     switch(input) {
     case KEY_DOWN:
-      msg_offset++;
+      if(msg_offset < sg[graph_offset].num_msg - 1) {
+	msg_offset++;
+      }
       break;
     case KEY_UP:
       if(msg_offset > 0) {
@@ -37,7 +40,7 @@ void do_graph(WINDOW * wnd, int fd) {
 	}
       break;
     case KEY_RIGHT:
-      if(graph_offset < MAX_GRAPHS) {
+      if(graph_offset < num_sg - 1) {
 	graph_offset++;
 	msg_offset = 0;
       }
@@ -52,6 +55,17 @@ void do_graph(WINDOW * wnd, int fd) {
   }
 }
 
+void do_get_input(int fd) {
+  int c;
+  while( (c = getch())) {
+    write(fd, &c, sizeof(c));
+  }
+}
+
+void do_capture(int fd) {
+
+}
+
 int main() {
   #include "demo_data.h"
 
@@ -61,7 +75,8 @@ int main() {
   cbreak(); //disables line buffering, making characters immediately available
   noecho(); //do not print characters on screen
   keypad(stdscr, TRUE); // enable arrow keys, F1, ...
-
+  curs_set(0);
+  
   //setup pipe for interprocess communication
   int fd[2];
   if(pipe(fd) == - 1) {
@@ -81,10 +96,7 @@ int main() {
   } else { //child
     close(fd[0]);
     close(1); //close 1 = stdout
-    int c;
-    while( (c = getch())) {
-      write(fd[1], &c, sizeof(c));
-    }
+    do_get_input(fd[1]);
   }
 
   endwin();

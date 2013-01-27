@@ -1,6 +1,8 @@
 #ifndef DEMO_DATA_H
 #define DEMO_DATA_H
 
+num_sg = 3;
+
 sg[0].num_a = 3;
 sg[0].a[0] = "192.168.1.1";
 sg[0].a[1] = "192.168.1.2";
