@@ -1,4 +1,4 @@
 all:
-	gcc -Wall sipgrep.c sipgraph.c -lcurses -lpthread -o sipgrep
+	gcc -Wall sipgrep.c sipgraph.c sipdump.c -lcurses -lpthread -losip2 -losipparser2 -lpcap  -o sipgrep
 clean:
 	rm sipgrep

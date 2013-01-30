@@ -104,7 +104,7 @@ void draw_sip_msg(int from, int to, char *msg, int num_a, int x, pos max_x, pos 
 /*******************************************************************/
 /* draw a complete graph, beginning with the message at msg_offset */
 /*******************************************************************/
-void draw_graph(struct SipGraph sg, unsigned short msg_offset, pos max_x, pos max_y) {
+void draw_graph(sip_graph_t sg, unsigned short msg_offset, pos max_x, pos max_y) {
   pos x = 0, y = 0;
   pos offset = get_offset(sg.num_a, max_y);
   pos init_offset = get_init_offset(sg.num_a, max_y);
