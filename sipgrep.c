@@ -15,7 +15,7 @@
  
 //SipGraph, share amongst everything
 sip_graph_t *sg[MAX_GRAPHS];
-unsigned short num_sg;
+unsigned short sg_length = 0;
 int fd[2];
 WINDOW * wnd;
 
@@ -29,7 +29,7 @@ void *do_graph(void *ptr) {
   while(true) {
     //draw frame
     clear();
-    draw_graph(*sg[graph_offset], msg_offset, max_x, max_y);
+    draw_graph(sg[graph_offset], msg_offset, max_x, max_y);
     refresh();
     
     //read integer from input pipe, block until input
@@ -54,7 +54,7 @@ void *do_graph(void *ptr) {
 	}
       break;
     case KEY_RIGHT:
-      if(graph_offset < num_sg - 1) {
+      if(graph_offset < sg_length - 1) {
 	graph_offset++;
 	msg_offset = 0;
       }
@@ -65,8 +65,8 @@ void *do_graph(void *ptr) {
 	msg_offset = 0;
       }
       break;
-    }
-  }
+    } //switch
+  } //while
 
   return 0;
 }
@@ -85,21 +85,21 @@ void do_pcap_loop(u_char *arg, const struct pcap_pkthdr *header, const u_char *f
   //struct ether_header *ether_header = (struct ether_header *) frame;
   struct iphdr *ip_header = (struct iphdr *) (frame + sizeof(struct ether_header));
   int ip_header_length = ip_header->ihl * 4;   //ip header size may be variable
-  struct udphdr *udp_header = (struct udphdr *) (frame + sizeof(struct ether_header) + ip_header_length);
+  //struct udphdr *udp_header = (struct udphdr *) (frame + sizeof(struct ether_header) + ip_header_length);
   unsigned int header_length = (sizeof(struct ether_header) + ip_header_length + sizeof(struct udphdr));
   
   //payload part
   const char *payload = (const char *) (frame + header_length);
   unsigned int payload_length = header->len - header_length;
 
-  if( sipdump(payload, payload_length, sg) == -1 ) {
+  if( sipdump(payload, payload_length, sg, &sg_length) == -1 ) {
     //perror("Error in function sipdump\n");
     return;
   }
 
   //send update to display thread
-  //  int input = 'r';
-  //  write(fd[1], &input, sizeof(input)); 
+  int input = 'r';
+  write(fd[1], &input, sizeof(input)); 
 }
 
 void *do_capture(void *ptr) {
@@ -148,7 +148,7 @@ void *do_capture(void *ptr) {
 }
 
 int main(int argc, char *argv[]) {
-  #include "demo_data.h"
+  /* #include "demo_data.h" */
 
   //enable curses
   wnd = initscr();

@@ -104,10 +104,12 @@ void draw_sip_msg(int from, int to, char *msg, int num_a, int x, pos max_x, pos 
 /*******************************************************************/
 /* draw a complete graph, beginning with the message at msg_offset */
 /*******************************************************************/
-void draw_graph(sip_graph_t sg, unsigned short msg_offset, pos max_x, pos max_y) {
+void draw_graph(sip_graph_t *sg, unsigned short msg_offset, pos max_x, pos max_y) {
+  if(sg == NULL) return;
+
   pos x = 0, y = 0;
-  pos offset = get_offset(sg.num_a, max_y);
-  pos init_offset = get_init_offset(sg.num_a, max_y);
+  pos offset = get_offset(sg->num_a, max_y);
+  pos init_offset = get_init_offset(sg->num_a, max_y);
   y = init_offset;
   int i;
   /***************/
@@ -115,9 +117,9 @@ void draw_graph(sip_graph_t sg, unsigned short msg_offset, pos max_x, pos max_y)
   /***************/
   attron(A_BOLD);
   //titles
-  for(i = 0; i < sg.num_a; i++) {
-    move(x, y - strlen(sg.a[i]) / 2);
-    insstr(sg.a[i]);
+  for(i = 0; i < sg->num_a; i++) {
+    move(x, y - strlen(sg->a[i]) / 2);
+    insstr(sg->a[i]);
     y += offset;
   }
   //go one line below
@@ -130,7 +132,7 @@ void draw_graph(sip_graph_t sg, unsigned short msg_offset, pos max_x, pos max_y)
   /*************/
   for(;x < max_x;x++) {
     y = init_offset;
-    for(i = 0; i < sg.num_a; i++) {
+    for(i = 0; i < sg->num_a; i++) {
       move(x, y);
       delch();insch('|');
       y += offset;
@@ -142,13 +144,13 @@ void draw_graph(sip_graph_t sg, unsigned short msg_offset, pos max_x, pos max_y)
   /*********************/
   x = 0;y = 0;
   int max_msg = max_x / 2 - 1 + msg_offset;
-  if(sg.num_msg < max_msg) {
-    max_msg = sg.num_msg;
+  if(sg->num_msg < max_msg) {
+    max_msg = sg->num_msg;
   }
   
   for(i = msg_offset;i < max_msg;i++) {
     x += 2; 
-    draw_sip_msg(sg.msg[i].src, sg.msg[i].dst, sg.msg[i].desc, sg.num_a, x, max_x, max_y);
+    draw_sip_msg(sg->msg[i].src, sg->msg[i].dst, sg->msg[i].desc, sg->num_a, x, max_x, max_y);
   }
 
   /*********************/

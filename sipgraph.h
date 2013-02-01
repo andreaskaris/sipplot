@@ -18,6 +18,7 @@ typedef struct sip_msg {
   int src;
   int dst;
   char *desc;
+  char *contact; //from contact
   osip_event_t *event;
 } sip_msg_t;
 
@@ -28,6 +29,7 @@ typedef struct sip_graph {
   unsigned short num_msg;
   sip_actors a;
   unsigned short num_a;
+  char *call_id;
 } sip_graph_t;
 
 
@@ -49,6 +51,6 @@ void draw_msg(pos x, pos y, int length, char dir, char *msg, pos max_x, pos max_
 //draw a msg from element x to element y
 void draw_sip_msg(int from, int to, char *msg, int num_a, int x, pos max_x, pos max_y);
 //draw a complete sip graph
-void draw_graph(sip_graph_t sg, unsigned short msg_offset, pos max_x, pos max_y);
+void draw_graph(sip_graph_t *sg, unsigned short msg_offset, pos max_x, pos max_y);
 
 #endif
