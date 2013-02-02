@@ -1,6 +1,6 @@
 all:
-	gcc -Wall sipgrep.c sipgraph.c sipdump.c -lcurses -lpthread -losip2 -losipparser2 -lpcap  -o sipgrep
+	gcc -Wall sipplot.c sipgraph.c sipdump.c -lcurses -lpthread -losip2 -losipparser2 -lpcap  -o sipplot
 debug:
-	gcc -Wall -g sipgrep.c sipgraph.c sipdump.c -lcurses -lpthread -losip2 -losipparser2 -lpcap  -o sipgrep
+	gcc -Wall -g sipplot.c sipgraph.c sipdump.c -lcurses -lpthread -losip2 -losipparser2 -lpcap  -o sipplot
 clean:
-	rm sipgrep
+	rm sipplot
