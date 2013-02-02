@@ -3,11 +3,8 @@
 #include <unistd.h>
 #include <curses.h>
 #include <pthread.h>
-#include <linux/ip.h>
-#include <linux/udp.h>
-#include <net/ethernet.h>
-#include <arpa/inet.h>
 #include <pcap.h>
+#include <getopt.h>
 #include "sipgraph.h"
 #include "sipdump.h"
 
@@ -81,18 +78,7 @@ void *do_input(void *ptr) {
 }
 
 void do_pcap_loop(u_char *arg, const struct pcap_pkthdr *header, const u_char *frame) {
-  //header part
-  //struct ether_header *ether_header = (struct ether_header *) frame;
-  struct iphdr *ip_header = (struct iphdr *) (frame + sizeof(struct ether_header));
-  int ip_header_length = ip_header->ihl * 4;   //ip header size may be variable
-  //struct udphdr *udp_header = (struct udphdr *) (frame + sizeof(struct ether_header) + ip_header_length);
-  unsigned int header_length = (sizeof(struct ether_header) + ip_header_length + sizeof(struct udphdr));
-  
-  //payload part
-  const char *payload = (const char *) (frame + header_length);
-  unsigned int payload_length = header->len - header_length;
-
-  if( sipdump(payload, payload_length, sg, &sg_length) == -1 ) {
+  if( sipdump(frame, header->len, sg, &sg_length) == -1 ) {
     //perror("Error in function sipdump\n");
     return;
   }
