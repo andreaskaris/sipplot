@@ -5,6 +5,17 @@
 #include <curses.h>
 #include "sipgraph.h"
 
+/***************************************************************************************/
+/* get maximum message number that can be displayed on screen from with current offset */
+/***************************************************************************************/
+int get_max_msg(sip_graph_t *sg, unsigned short msg_offset, pos max_x) { 
+  int max_msg = max_x / 2 - 1 + msg_offset; 
+  if(sg->num_msg < max_msg) { 
+    max_msg = sg->num_msg; 
+  } 
+  return max_msg;
+}
+
 /************************************************/
 /* get offset between 2 vertical lines in graph */
 /************************************************/
@@ -104,12 +115,15 @@ void draw_sip_msg(int from, int to, char *msg, int num_a, int x, pos max_x, pos 
 /*******************************************************************/
 /* draw a complete graph, beginning with the message at msg_offset */
 /*******************************************************************/
-void draw_graph(sip_graph_t *sg, unsigned short msg_offset, pos max_x, pos max_y) {
+void draw_graph(sip_graph_t *sg, unsigned short msg_highlight, unsigned short msg_offset, pos max_x, pos max_y) {
   if(sg == NULL) return;
 
+  init_pair(1, COLOR_WHITE, COLOR_BLACK);
+  init_pair(2, COLOR_RED, COLOR_BLACK);
+
   pos x = 0, y = 0;
-  pos offset = get_offset(sg->num_a, max_y);
-  pos init_offset = get_init_offset(sg->num_a, max_y);
+  pos offset = get_offset(sg->num_a, max_y); /* offset from one vertical line to the next */
+  pos init_offset = get_init_offset(sg->num_a, max_y); /* initial offset from the left */
   y = init_offset;
   int i;
   /***************/
@@ -143,14 +157,18 @@ void draw_graph(sip_graph_t *sg, unsigned short msg_offset, pos max_x, pos max_y
   /* draw sip messages */
   /*********************/
   x = 0;y = 0;
-  int max_msg = max_x / 2 - 1 + msg_offset;
-  if(sg->num_msg < max_msg) {
-    max_msg = sg->num_msg;
-  }
+  //maximum: either what fits on screen, or number of messages in graph
+  int max_msg = get_max_msg(sg, msg_offset, max_x);
   
   for(i = msg_offset;i < max_msg;i++) {
     x += 2; 
+    if(i == msg_highlight) {
+      attron(COLOR_PAIR(2));
+    }
     draw_sip_msg(sg->msg[i].src, sg->msg[i].dst, sg->msg[i].desc, sg->num_a, x, max_x, max_y);
+    if(i == msg_highlight) {
+      attron(COLOR_PAIR(1));
+    }
   }
 
   /*********************/

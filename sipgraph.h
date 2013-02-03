@@ -38,6 +38,11 @@ typedef struct sip_graph {
 /***************/
 typedef unsigned int pos;
 
+/***********/
+/* helpers */
+/***********/
+//get maximum message (either limited by lower border or by graph)
+int get_max_msg(sip_graph_t *sg, unsigned short msg_offset, pos max_x);
 //get offset between vertical lines
 int get_offset(int num_a, pos max_y);
 //get initial offset
@@ -51,6 +56,6 @@ void draw_msg(pos x, pos y, int length, char dir, char *msg, pos max_x, pos max_
 //draw a msg from element x to element y
 void draw_sip_msg(int from, int to, char *msg, int num_a, int x, pos max_x, pos max_y);
 //draw a complete sip graph
-void draw_graph(sip_graph_t *sg, unsigned short msg_offset, pos max_x, pos max_y);
+void draw_graph(sip_graph_t *sg, unsigned short msg_highlight, unsigned short msg_offset, pos max_x, pos max_y);
 
 #endif

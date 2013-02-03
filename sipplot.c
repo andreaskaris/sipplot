@@ -26,6 +26,7 @@ sip_graph_t *sg[MAX_GRAPHS]; /* collection of sip_graphs */
 unsigned short sg_length = 0; /* length of sip_graph */
 int pipe_fd[2]; /* thread communication from user input and capture to graph thread (pipe) */
 WINDOW * wnd; /* the main window (curses) */
+WINDOW * info; /* the sub info window */
 
 /**************************/
 /* 3 threads for 	  */
@@ -46,6 +47,12 @@ void do_pcap_loop(u_char *arg, const struct pcap_pkthdr *header, const u_char *f
 /* usage instructions for options */
 /**********************************/
 void print_usage();
+
+/************************************/
+/* callback which is called on exit */
+/* end curses windows session	    */
+/************************************/
+void atexit_callback();
 
 int main(int argc, char *argv[]) {  
   int option = 0;
@@ -76,13 +83,25 @@ int main(int argc, char *argv[]) {
     exit(0);
   }
 
+  //register atexit handler that ends curses
+  if(atexit(atexit_callback)) {
+    fprintf(stderr, "Could not register atexit callback");
+    exit(1);
+  }
+
   //enable curses
   wnd = initscr();
   cbreak(); //disables line buffering, making characters immediately available
   noecho(); //do not print characters on screen
-  keypad(stdscr, TRUE); // enable arrow keys, F1, ...
-  curs_set(0);
-
+  keypad(stdscr, true); // enable arrow keys, F1, ...
+  curs_set(0); //disable the cursor
+  //set colors
+  if(has_colors() == false) {
+    printf("Your terminal does not support colors\n");
+    exit(1);
+  } 
+  start_color();
+  
   //create a pipe
   if( pipe(pipe_fd) == -1 ) {
     perror("Creating pipe\n");
@@ -122,15 +141,16 @@ int main(int argc, char *argv[]) {
 /************************************/ 
 void *do_graph(void *ptr) {
   pos max_x,max_y; //number of total rows and cols in window 
-  int msg_offset = 0;
-  int graph_offset = 0;
+  unsigned short msg_offset = 0; /* shift the messages downwards */
+  unsigned short msg_highlight = 0; /* highlight a particular message */
+  unsigned short graph_offset = 0; /* which graph */
   int input;
   getmaxyx(wnd, max_x, max_y); //size of window
-  
+
   while(true) {
     //draw frame
     clear();
-    draw_graph(sg[graph_offset], msg_offset, max_x, max_y);
+    draw_graph(sg[graph_offset], msg_highlight, msg_offset, max_x, max_y);
     refresh();
     
     //read integer from input pipe, block until input
@@ -145,26 +165,42 @@ void *do_graph(void *ptr) {
       //just refresh, do nothing
       break;
     case KEY_DOWN:
-      if(msg_offset < sg[graph_offset]->num_msg - 1) {
-	msg_offset++;
+      if(msg_highlight < sg[graph_offset]->num_msg - 1) {
+	msg_highlight++;
+	int max_msg = get_max_msg(sg[graph_offset], msg_offset, max_x);
+	if(msg_highlight >= max_msg) {
+	  msg_offset++;
+	}
       }
       break;
     case KEY_UP:
-      if(msg_offset > 0) {
-	msg_offset--;
+      if(msg_highlight > 0) {
+	msg_highlight--;
+	if(msg_highlight < msg_offset) {
+	  msg_offset--;
 	}
+      }
       break;
     case KEY_RIGHT:
       if(graph_offset < sg_length - 1) {
 	graph_offset++;
 	msg_offset = 0;
+	msg_highlight = 0;
       }
       break;
     case KEY_LEFT:
       if(graph_offset > 0) {
 	graph_offset--;
 	msg_offset = 0;
+	msg_highlight = 0;
       }
+      break;
+    case '\n':
+      info = subwin(wnd, max_x - 10, max_y - 10, 5, 5);
+      wbkgd(info, A_NORMAL | ' ');
+      wrefresh(info);
+      sleep(10);
+      delwin(info);
       break;
     } //switch
   } //while
@@ -268,4 +304,12 @@ void print_usage() {
   printf("  -t TCP capture (currently not supported)\n");
   printf("  -i <interface> live capture on interface\n");
   printf("  -f <filename> capture from pcap file\n");
+}
+
+/************************************/
+/* callback which is called on exit */
+/* end curses windows session	    */
+/************************************/
+void atexit_callback() {
+  endwin(); /* weird console behaviour if curses is not terminated */
 }
