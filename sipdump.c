@@ -24,7 +24,7 @@ int sipdump(const u_char* frame, unsigned int frame_length, sip_graph_t *sg[], u
   unsigned int header_length = (sizeof(struct ether_header) + ip_header_length + sizeof(struct udphdr));
   
   //payload part
-  const char *payload = (const char *) (frame + header_length);
+  char *payload = (char *) (frame + header_length);
   unsigned int payload_length = frame_length - header_length;
 
   osip_event_t *oe = osip_parse(payload, payload_length);
@@ -33,6 +33,8 @@ int sipdump(const u_char* frame, unsigned int frame_length, sip_graph_t *sg[], u
     return -1;
   }
 
+  oe->sip->message = malloc(100);
+  memcpy(oe->sip->message, payload, 100);
   if( ins_sip_graph(ip_header, oe, sg, sg_length) == -1) {
     //perror("Could not insert message into sip_graph");
     return -1;

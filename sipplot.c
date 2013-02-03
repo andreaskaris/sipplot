@@ -197,10 +197,18 @@ void *do_graph(void *ptr) {
       break;
     case '\n':
       info = subwin(wnd, max_x - 10, max_y - 10, 5, 5);
-      wbkgd(info, A_NORMAL | ' ');
-      wrefresh(info);
-      sleep(10);
-      delwin(info);
+      //wbkgd(info, A_NORMAL | ' ');
+      werase(info); //clear background of subwindow
+      box(info, 0, 0); //draw border
+      wmove(info,20,20);
+      waddstr(info, sg[graph_offset]->msg[msg_highlight].event->sip->message); //add raw sip to subwin
+      wrefresh(info); //refresh subwindow (draw)
+      //read integer from input pipe, block until input
+      if( read(pipe_fd[0], &input, sizeof(input)) == -1 ) {
+	perror("reading from pipe");
+	exit(1);
+      }
+      delwin(info); //delete subwindow
       break;
     } //switch
   } //while
